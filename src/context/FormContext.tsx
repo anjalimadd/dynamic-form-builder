@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useReducer, useMemo } from "react";
-import { validateField, validateAll } from "../utils/validation";
+import { validateAll } from "../utils/validation";
 import { loadState, saveState } from "../utils/storage";
 
 
@@ -10,7 +10,7 @@ export interface Field {
   type: FieldType;
   label: string;
   value: string;
-  error: string | null;
+   error?: string | null;
 }
 
 export interface FormState {
@@ -22,7 +22,7 @@ export interface FormState {
 type Action =
   | { type: "add"; payload: { type: FieldType; label?: string } }
   | { type: "remove"; payload: { id: string } }
-  | { type: "update"; payload: { id: string; patch: Partial<Pick<Field, "label" | "value" | "type">> } }
+  | { type: "update"; payload: { id: string; patch: Partial<Pick<Field, "label" | "value" | "type"| "error">> } }
   | { type: "setAll"; payload: { fields: Field[] } }
   | { type: "submit" }
   | { type: "reset" };
@@ -55,7 +55,12 @@ function reducer(state: FormState, action: Action): FormState {
   case "update": {
   const fields = state.fields.map((f) => {
     if (f.id !== action.payload.id) return f;
-    const updated = { ...f, ...action.payload.patch };
+    // const updated = { ...f, ...action.payload.patch };
+        const updated: Field = {
+          ...f,
+          ...action.payload.patch,
+          error: f.error ?? null, 
+        };
 
     return updated;
   });
@@ -63,9 +68,13 @@ function reducer(state: FormState, action: Action): FormState {
 }
 
 
-    case "setAll": {
-      return { ...state, fields: action.payload.fields };
-    }
+  case "setAll": {
+  return { 
+    ...state, 
+    fields: action.payload.fields.map(f => ({ ...f, error: f.error ?? null }))
+  };
+}
+
   
     case "submit": {
   const { withErrors, valid } = validateAll(state.fields);
@@ -80,8 +89,8 @@ function reducer(state: FormState, action: Action): FormState {
 }
 
 export function DynamicFormProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined as unknown as FormState, loadState);
-
+  // const [state, dispatch] = useReducer(reducer, undefined as unknown as FormState, loadState);
+const [state, dispatch] = useReducer(reducer, loadState());
   useEffect(() => {
     saveState(state);
   }, [state]);

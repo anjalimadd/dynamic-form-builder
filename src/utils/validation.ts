@@ -5,7 +5,9 @@ export type FieldType = "text" | "email" | "number";
 export interface Field {
   id: string;
   type: FieldType;
+   label: string;
   value: string;
+  error?: string | null;
 }
 
 const FIELD_SCHEMAS: Record<FieldType, z.ZodType<string>> = {
